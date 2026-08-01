@@ -39,27 +39,6 @@ class AuthService extends ChangeNotifier {
     _loadAuthFromStorage();
   }
 
-  /// Initialize OAuth callback listener after login is initiated
-  Future<void> handleOAuthCallback() async {
-    try {
-      final result = await FlutterWebAuth2.getCallbackUrlParams();
-      if (result.containsKey('code')) {
-        final code = result['code'];
-        final state = result['state'];
-        debugPrint('OAuth callback received: code=${code?.substring(0, 10)}..., state=$state');
-        
-        if (code != null) {
-          await handleCallback(Uri(
-            queryParameters: {'code': code, 'state': state},
-          ));
-        }
-      }
-    } catch (e) {
-      // No callback available yet, this is normal
-      debugPrint('No OAuth callback available: $e');
-    }
-  }
-
   /// Load authentication data from local storage
   Future<void> _loadAuthFromStorage() async {
     try {
@@ -132,7 +111,7 @@ class AuthService extends ChangeNotifier {
       // Use flutter_web_auth_2 to handle the authentication flow
       final result = await FlutterWebAuth2.authenticate(
         url: authUrl.toString(),
-        callbackUrlScheme: 'auth',
+        callbackUrlScheme: 'twitch',
       );
       
       debugPrint('Authentication completed, result: $result');
@@ -141,9 +120,11 @@ class AuthService extends ChangeNotifier {
       final callbackUri = Uri.parse(result);
       await handleCallback(callbackUri);
       
-    } on FlutterWebAuth2Exception catch (e) {
-      // User cancelled the login
-      if (e.code != FlutterWebAuth2ErrorCode.userCancelled) {
+    } on Exception catch (e) {
+      // Check if user cancelled the login
+      if (e.toString().contains('user cancelled') || e.toString().contains('User closed')) {
+        debugPrint('Login cancelled by user');
+      } else {
         debugPrint('Login error: $e');
         rethrow;
       }

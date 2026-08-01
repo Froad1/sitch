@@ -1,16 +1,18 @@
 ```
-# Dart/Flutter build outputs
+# Dart/Flutter specific
 .dart_tool/
-.build/
-packages/
-*.g.dart
-*.freezed.dart
+.packages
+pubspec.lock
+
+# Build outputs
+build/
 
 # IDE files
 .idea/
 .vscode/
-*.swp
-*.swo
+*.iml
+*.ipr
+*.iws
 
 # Logs
 *.log
@@ -20,9 +22,7 @@ packages/
 .env.local
 *.env.*
 
-# Coverage
-coverage/
-
-# Temporary files
-*.tmp
+# OS generated files
+.DS_Store
+Thumbs.db
 ```
