@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -19,7 +20,7 @@ class AuthService extends ChangeNotifier {
   bool get isAuthenticated => _accessToken != null;
   bool get isLoading => _isLoading;
 
-  StreamController<bool> _authStateController = StreamController<bool>.broadcast();
+  final _authStateController = StreamController<bool>.broadcast();
   Stream<bool> get authStateChanges => _authStateController.stream;
 
   AuthService() {
