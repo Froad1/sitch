@@ -5,8 +5,22 @@ import '../services/auth_service.dart';
 import '../widgets/glass_button.dart';
 
 /// Login screen with Apple Liquid Glass design
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _tokenController = TextEditingController();
+  bool _showTokenField = false;
+
+  @override
+  void dispose() {
+    _tokenController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,16 +106,112 @@ class LoginScreen extends StatelessWidget {
                       color: Colors.white,
                     )
                   else
-                    GlassButton(
-                      onPressed: () => authService.login(),
-                      icon: Icons.login,
-                      text: 'Sign in with Twitch',
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF9146FF),
-                          Color(0xFF772CE8),
+                    Column(
+                      children: [
+                        GlassButton(
+                          onPressed: () => authService.login(),
+                          icon: Icons.login,
+                          text: 'Sign in with Twitch',
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF9146FF),
+                              Color(0xFF772CE8),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _showTokenField = !_showTokenField;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _showTokenField ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                  size: 16,
+                                  color: Colors.white70,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _showTokenField 
+                                    ? 'Hide manual token input' 
+                                    : 'Use manual token for testing',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_showTokenField) ...[
+                          const SizedBox(height: 16),
+                          GlassContainer(
+                            opacity: 0.1,
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              children: [
+                                TextField(
+                                  controller: _tokenController,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Access Token',
+                                    labelStyle: TextStyle(color: Colors.white54),
+                                    hintText: 'Paste your OAuth token here...',
+                                    hintStyle: TextStyle(color: Colors.white38),
+                                    border: InputBorder.none,
+                                    prefixIcon: Icon(Icons.key, color: Colors.white54),
+                                  ),
+                                  maxLines: 3,
+                                  minLines: 1,
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: GlassButton(
+                                    onPressed: () {
+                                      final token = _tokenController.text.trim();
+                                      if (token.isNotEmpty) {
+                                        authService.setManualToken(token);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Token set successfully!'),
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    icon: Icons.check,
+                                    text: 'Apply Token',
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF00F5EA),
+                                        Color(0xFF00C9B8),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
-                      ),
+                      ],
                     ),
                   const SizedBox(height: 24),
                   
