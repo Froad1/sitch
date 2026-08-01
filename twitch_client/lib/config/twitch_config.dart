@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 
 class TwitchConfig {
   // Replace with your actual Twitch OAuth credentials
-  static const String clientId = 'YOUR_TWITCH_CLIENT_ID';
-  static const String clientSecret = 'YOUR_TWITCH_CLIENT_SECRET';
-  static const String redirectUri = 'twitchclient://auth/callback';
+  static const String clientId = 'oc3x0o8xlhmi208n62je3urt4yck5w';
+  static const String clientSecret = '6kqw37ugnej7swsjqkik3hs4doco1z';
+  static const String redirectUri = 'http://localhost:8080/auth/callback';
   
   // OAuth scopes required for the application
   static const List<String> scopes = [
