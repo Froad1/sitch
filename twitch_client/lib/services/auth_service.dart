@@ -21,7 +21,7 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   final _authStateController = StreamController<bool>.broadcast();
-  Stream<bool> get authStateChanges => _authStateController.stream;
+  get authStateChanges => _authStateController.stream;
 
   AuthService() {
     _loadAuthFromStorage();
