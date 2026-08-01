@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:http/http.dart' as http;
 import '../config/twitch_config.dart';
 import '../models/twitch_models.dart';
 
@@ -35,6 +37,27 @@ class AuthService extends ChangeNotifier {
 
   AuthService() {
     _loadAuthFromStorage();
+  }
+
+  /// Initialize OAuth callback listener after login is initiated
+  Future<void> handleOAuthCallback() async {
+    try {
+      final result = await FlutterWebAuth2.getCallbackUrlParams();
+      if (result.containsKey('code')) {
+        final code = result['code'];
+        final state = result['state'];
+        debugPrint('OAuth callback received: code=${code?.substring(0, 10)}..., state=$state');
+        
+        if (code != null) {
+          await handleCallback(Uri(
+            queryParameters: {'code': code, 'state': state},
+          ));
+        }
+      }
+    } catch (e) {
+      // No callback available yet, this is normal
+      debugPrint('No OAuth callback available: $e');
+    }
   }
 
   /// Load authentication data from local storage
@@ -104,19 +127,25 @@ class AuthService extends ChangeNotifier {
         },
       );
 
-      // Launch browser for authentication
-      if (await canLaunchUrl(authUrl)) {
-        await launchUrl(
-          authUrl,
-          mode: LaunchMode.externalApplication,
-        );
-        
-        // Note: In a real app, you'd need to handle the callback URL
-        // This is platform-specific and requires additional setup
-        debugPrint('Authorization URL: $authUrl');
-        debugPrint('Please complete authentication in browser and handle callback');
-      } else {
-        throw Exception('Could not launch authorization URL');
+      debugPrint('Starting OAuth flow with URL: $authUrl');
+      
+      // Use flutter_web_auth_2 to handle the authentication flow
+      final result = await FlutterWebAuth2.authenticate(
+        url: authUrl.toString(),
+        callbackUrlScheme: 'auth',
+      );
+      
+      debugPrint('Authentication completed, result: $result');
+      
+      // Parse the callback URL and handle the code
+      final callbackUri = Uri.parse(result);
+      await handleCallback(callbackUri);
+      
+    } on FlutterWebAuth2Exception catch (e) {
+      // User cancelled the login
+      if (e.code != FlutterWebAuth2ErrorCode.userCancelled) {
+        debugPrint('Login error: $e');
+        rethrow;
       }
     } catch (e) {
       debugPrint('Login error: $e');
@@ -167,8 +196,6 @@ class AuthService extends ChangeNotifier {
 
   /// Make token request to Twitch
   Future<Map<String, dynamic>> _makeTokenRequest(Map<String, String> params) async {
-    // This would normally make an HTTP request to Twitch's token endpoint
-    // For security, this should be done through a backend server in production
     final url = Uri.parse('${TwitchConfig.authUrl}/token');
     
     final body = {
@@ -178,10 +205,46 @@ class AuthService extends ChangeNotifier {
     };
 
     debugPrint('Token request to: $url');
-    debugPrint('Body: $body');
     
-    // Placeholder - implement actual HTTP request
-    throw UnimplementedError('Token request must be implemented with proper HTTP client');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body,
+      );
+
+      debugPrint('Token response status: ${response.statusCode}');
+      debugPrint('Token response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        // Extract token information
+        _accessToken = data['access_token'] as String?;
+        _refreshToken = data['refresh_token'] as String?;
+        
+        final expiresIn = data['expires_in'] as int?;
+        if (expiresIn != null) {
+          _tokenExpiresAt = DateTime.now().add(Duration(seconds: expiresIn));
+        } else {
+          _tokenExpiresAt = DateTime.now().add(const Duration(hours: 24));
+        }
+
+        // Fetch user data after getting the token
+        if (_accessToken != null) {
+          await fetchCurrentUser();
+        }
+
+        return data;
+      } else {
+        throw Exception('Token request failed: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('HTTP request error: $e');
+      rethrow;
+    }
   }
 
   /// Refresh access token
@@ -240,14 +303,33 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // This would make an HTTP request to Twitch API
-      // GET https://api.twitch.tv/helix/users
-      // Headers: Authorization: Bearer <token>, Client-Id: <client_id>
+      final url = Uri.parse('${TwitchConfig.baseUrl}/users');
       
-      debugPrint('Fetching current user with token: ${_accessToken?.substring(0, 10)}...');
+      final response = await http.get(
+        url,
+        headers: {
+          'Client-Id': TwitchConfig.clientId,
+          'Authorization': 'Bearer $_accessToken',
+        },
+      );
+
+      debugPrint('User API response status: ${response.statusCode}');
       
-      // Placeholder - implement actual API call
-      throw UnimplementedError('Fetch user must be implemented with HTTP client');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final usersList = data['data'] as List<dynamic>;
+        
+        if (usersList.isNotEmpty) {
+          _currentUser = TwitchUser.fromJson(usersList[0] as Map<String, dynamic>);
+          debugPrint('Logged in as: ${_currentUser?.displayName} (${_currentUser?.login})');
+        }
+        
+        await _saveAuthToStorage();
+        _authStateController.add(true);
+        notifyListeners();
+      } else {
+        throw Exception('Failed to fetch user data: ${response.statusCode} - ${response.body}');
+      }
     } catch (e) {
       debugPrint('Fetch user error: $e');
       rethrow;
