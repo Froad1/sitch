@@ -20,6 +20,16 @@ class AuthService extends ChangeNotifier {
   bool get isAuthenticated => _accessToken != null;
   bool get isLoading => _isLoading;
 
+  /// Set access token manually for testing purposes
+  void setManualToken(String token) {
+    _accessToken = token;
+    _tokenExpiresAt = DateTime.now().add(const Duration(hours: 24));
+    notifyListeners();
+    _authStateController.add(true);
+    // Save to storage for persistence
+    _saveAuthToStorage();
+  }
+
   final _authStateController = StreamController<bool>.broadcast();
   get authStateChanges => _authStateController.stream;
 
