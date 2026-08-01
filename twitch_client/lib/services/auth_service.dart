@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:http/http.dart' as http;
+import 'package:web/web.dart' as web;
 import '../config/twitch_config.dart';
 import '../models/twitch_models.dart';
 
@@ -37,6 +39,111 @@ class AuthService extends ChangeNotifier {
 
   AuthService() {
     _loadAuthFromStorage();
+    _setupWebCallbackListener();
+  }
+
+  /// Setup listener for web OAuth callback
+  void _setupWebCallbackListener() {
+    if (!kIsWeb) return;
+
+    // Listen for messages from the callback window
+    web.window.addEventListener('message', (web.Event event) {
+      final messageEvent = event as web.MessageEvent;
+      _handleWebMessage(messageEvent);
+    });
+
+    // Check for stored auth code on page load (direct navigation flow)
+    _checkStoredAuthCode();
+  }
+
+  /// Handle messages from OAuth callback window
+  void _handleWebMessage(web.MessageEvent event) {
+    try {
+      final data = event.data;
+      if (data == null) return;
+
+      // Convert JS object to Dart map
+      final jsObj = data.dartify() as Map<String, dynamic>?;
+      if (jsObj == null) return;
+
+      final type = jsObj['type'] as String?;
+      
+      switch (type) {
+        case 'twitch-auth-success':
+          final code = jsObj['code'] as String?;
+          final state = jsObj['state'] as String?;
+          
+          if (code != null) {
+            debugPrint('Received auth code from callback window');
+            // Clean up the stored data
+            web.window.localStorage.removeItem('twitch_auth_code');
+            web.window.localStorage.removeItem('twitch_auth_state');
+            web.window.localStorage.removeItem('twitch_auth_timestamp');
+            
+            // Process the code
+            _exchangeCodeForToken(code);
+          }
+          break;
+          
+        case 'twitch-auth-error':
+          final error = jsObj['error'] as String?;
+          final errorDescription = jsObj['error_description'] as String?;
+          
+          debugPrint('Auth error from callback: $error - $errorDescription');
+          _isLoading = false;
+          notifyListeners();
+          throw Exception('Authentication failed: ${errorDescription ?? error}');
+          
+        default:
+          break;
+      }
+    } catch (e) {
+      debugPrint('Error handling web message: $e');
+    }
+  }
+
+  /// Check for stored auth code from direct navigation
+  Future<void> _checkStoredAuthCode() async {
+    if (!kIsWeb) return;
+
+    try {
+      final storedCode = web.window.localStorage.getItem('twitch_auth_code');
+      final storedState = web.window.localStorage.getItem('twitch_auth_state');
+      final timestampStr = web.window.localStorage.getItem('twitch_auth_timestamp');
+      
+      if (storedCode != null && storedCode.isNotEmpty) {
+        // Check if the code is recent (within 5 minutes)
+        if (timestampStr != null) {
+          final timestamp = int.tryParse(timestampStr) ?? 0;
+          final age = DateTime.now().millisecondsSinceEpoch - timestamp;
+          
+          if (age > 300000) { // 5 minutes
+            debugPrint('Stored auth code is too old, clearing');
+            _clearStoredAuthData();
+            return;
+          }
+        }
+        
+        debugPrint('Found stored auth code, processing...');
+        
+        // Clear the stored data immediately to prevent reuse
+        _clearStoredAuthData();
+        
+        // Process the code
+        await _exchangeCodeForToken(storedCode);
+      }
+    } catch (e) {
+      debugPrint('Error checking stored auth code: $e');
+    }
+  }
+
+  /// Clear stored auth data from localStorage
+  void _clearStoredAuthData() {
+    if (!kIsWeb) return;
+    
+    web.window.localStorage.removeItem('twitch_auth_code');
+    web.window.localStorage.removeItem('twitch_auth_state');
+    web.window.localStorage.removeItem('twitch_auth_timestamp');
   }
 
   /// Load authentication data from local storage
@@ -108,17 +215,27 @@ class AuthService extends ChangeNotifier {
 
       debugPrint('Starting OAuth flow with URL: $authUrl');
       
-      // Use flutter_web_auth_2 to handle the authentication flow
-      final result = await FlutterWebAuth2.authenticate(
-        url: authUrl.toString(),
-        callbackUrlScheme: 'twitch',
-      );
-      
-      debugPrint('Authentication completed, result: $result');
-      
-      // Parse the callback URL and handle the code
-      final callbackUri = Uri.parse(result);
-      await handleCallback(callbackUri);
+      if (kIsWeb) {
+        // For web, open in a new window and let the callback page handle the rest
+        final windowFeatures = 'width=600,height=800,menubar=no,toolbar=no';
+        web.window.open(authUrl.toString(), '_blank', windowFeatures);
+        
+        // The callback will be handled by _setupWebCallbackListener via localStorage or postMessage
+        // We'll wait for the auth state to change via the stream
+        debugPrint('Web OAuth flow started, waiting for callback...');
+      } else {
+        // Use flutter_web_auth_2 to handle the authentication flow for mobile/desktop
+        final result = await FlutterWebAuth2.authenticate(
+          url: authUrl.toString(),
+          callbackUrlScheme: 'twitch',
+        );
+        
+        debugPrint('Authentication completed, result: $result');
+        
+        // Parse the callback URL and handle the code
+        final callbackUri = Uri.parse(result);
+        await handleCallback(callbackUri);
+      }
       
     } on Exception catch (e) {
       // Check if user cancelled the login

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authentication Callback - Twitch Client</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0E0E10 0%, #18181B 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #EFEFEF;
+    }
+    
+    .container {
+      text-align: center;
+      padding: 40px;
+      max-width: 500px;
+    }
+    
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 24px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+      }
+    }
+    
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(90deg, #9146FF, #00F5EA);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    p {
+      font-size: 16px;
+      color: #ADADB8;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+    
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(145, 70, 255, 0.2);
+      border-top-color: #9146FF;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 24px;
+    }
+    
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #ADADB8;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #00F5EA;
+      border-radius: 50%;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes blink {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.3;
+      }
+    }
+    
+    .error-message {
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid rgba(255, 71, 87, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 24px;
+      display: none;
+    }
+    
+    .error-message.show {
+      display: block;
+    }
+    
+    .error-title {
+      color: #FF4757;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .error-text {
+      color: #ADADB8;
+      font-size: 14px;
+    }
+    
+    .retry-btn {
+      background: linear-gradient(90deg, #9146FF, #772CE8);
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 24px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .retry-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(145, 70, 255, 0.4);
+    }
+    
+    .close-btn {
+      background: transparent;
+      color: #ADADB8;
+      border: 1px solid rgba(173, 173, 184, 0.3);
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 12px;
+      margin-left: 12px;
+      transition: all 0.2s;
+    }
+    
+    .close-btn:hover {
+      background: rgba(173, 173, 184, 0.1);
+      color: #EFEFEF;
+    }
+    
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #00F5EA, #9146FF);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      animation: successPop 0.5s ease-out;
+    }
+    
+    @keyframes successPop {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    
+    .success-icon svg {
+      width: 32px;
+      height: 32px;
+      fill: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loading-state">
+      <div class="spinner"></div>
+      <h1>Completing Authentication</h1>
+      <p>Please wait while we complete your sign-in with Twitch...</p>
+      <div class="status">
+        <span class="status-dot"></span>
+        <span>Processing authorization code</span>
+      </div>
+    </div>
+    
+    <div id="success-state" style="display: none;">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+      </div>
+      <h1>Authentication Successful!</h1>
+      <p>You have successfully signed in with Twitch. You can now close this window and return to the app.</p>
+    </div>
+    
+    <div id="error-state" style="display: none;">
+      <div class="error-message show">
+        <div class="error-title">Authentication Failed</div>
+        <div class="error-text" id="error-text">An error occurred during authentication.</div>
+      </div>
+      <button class="retry-btn" onclick="retryAuthentication()">Try Again</button>
+      <button class="close-btn" onclick="closeWindow()">Close Window</button>
+    </div>
+  </div>
+
+  <script>
+    // OAuth Callback Handler for Twitch Authentication
+    (function() {
+      'use strict';
+      
+      // Parse URL parameters
+      function getQueryParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+      }
+      
+      // Validate state parameter for security
+      function validateState(state) {
+        if (!state || state.length === 0) {
+          console.warn('No state parameter provided');
+          return false;
+        }
+        // In production, you should verify the state matches what was sent
+        // For now, we just check it exists
+        return true;
+      }
+      
+      // Show error state
+      function showError(message) {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('success-state').style.display = 'none';
+        document.getElementById('error-state').style.display = 'block';
+        document.getElementById('error-text').textContent = message;
+      }
+      
+      // Show success state
+      function showSuccess() {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('error-state').style.display = 'none';
+        document.getElementById('success-state').style.display = 'block';
+      }
+      
+      // Send callback data to parent window (for popup flow)
+      function sendToParent(data) {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({
+            type: 'twitch-auth-callback',
+            ...data
+          }, window.location.origin);
+          return true;
+        }
+        return false;
+      }
+      
+      // Store auth data in localStorage (for same-origin flows)
+      function storeAuthData(code, state) {
+        try {
+          localStorage.setItem('twitch_auth_code', code);
+          localStorage.setItem('twitch_auth_state', state);
+          localStorage.setItem('twitch_auth_timestamp', Date.now().toString());
+          return true;
+        } catch (e) {
+          console.error('Failed to store auth data:', e);
+          return false;
+        }
+      }
+      
+      // Handle fragment parameters (implicit flow)
+      function handleFragmentFlow() {
+        const hash = window.location.hash.substring(1);
+        if (!hash) return null;
+        
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get('access_token');
+        const state = params.get('state');
+        const expiresIn = params.get('expires_in');
+        
+        if (accessToken) {
+          return {
+            type: 'implicit',
+            access_token: accessToken,
+            state: state,
+            expires_in: expiresIn
+          };
+        }
+        return null;
+      }
+      
+      // Main callback handler
+      async function handleCallback() {
+        try {
+          console.log('OAuth callback received');
+          console.log('URL:', window.location.href);
+          
+          // Check for fragment flow (implicit grant)
+          const fragmentData = handleFragmentFlow();
+          if (fragmentData) {
+            console.log('Implicit flow detected');
+            if (sendToParent(fragmentData)) {
+              showSuccess();
+              setTimeout(() => window.close(), 2000);
+              return;
+            }
+          }
+          
+          // Authorization code flow
+          const code = getQueryParam('code');
+          const state = getQueryParam('state');
+          const error = getQueryParam('error');
+          const errorDescription = getQueryParam('error_description');
+          
+          // Check for errors from Twitch
+          if (error) {
+            const errorMessage = errorDescription || error;
+            console.error('Auth error:', error, errorMessage);
+            showError(`Twitch returned an error: ${errorMessage}`);
+            
+            // Try to notify parent window
+            sendToParent({
+              type: 'twitch-auth-error',
+              error: error,
+              error_description: errorDescription
+            });
+            return;
+          }
+          
+          // Validate required parameters
+          if (!code) {
+            console.error('No authorization code in callback');
+            showError('No authorization code received from Twitch. Please try logging in again.');
+            sendToParent({
+              type: 'twitch-auth-error',
+              error: 'no_code',
+              error_description: 'No authorization code received'
+            });
+            return;
+          }
+          
+          // Validate state for CSRF protection
+          if (!validateState(state)) {
+            console.error('Invalid or missing state parameter');
+            showError('Security validation failed. Please try logging in again.');
+            sendToParent({
+              type: 'twitch-auth-error',
+              error: 'invalid_state',
+              error_description: 'State parameter validation failed'
+            });
+            return;
+          }
+          
+          console.log('Authorization code received:', code.substring(0, 10) + '...');
+          console.log('State:', state);
+          
+          // Store the authorization code for the Flutter app to retrieve
+          if (storeAuthData(code, state)) {
+            console.log('Auth code stored in localStorage');
+            
+            // Try to send to parent window first
+            if (sendToParent({
+              type: 'twitch-auth-success',
+              code: code,
+              state: state
+            })) {
+              console.log('Callback sent to parent window');
+              showSuccess();
+              setTimeout(() => window.close(), 2000);
+            } else {
+              // If no parent window, show success and let Flutter poll localStorage
+              console.log('No parent window, using localStorage polling');
+              showSuccess();
+              
+              // Auto-close after a delay if opened as popup
+              if (window.opener) {
+                setTimeout(() => window.close(), 3000);
+              }
+            }
+          } else {
+            showError('Failed to store authentication data. Please try again.');
+          }
+          
+        } catch (err) {
+          console.error('Callback handling error:', err);
+          showError('An unexpected error occurred. Please try logging in again.');
+          sendToParent({
+            type: 'twitch-auth-error',
+            error: 'unexpected_error',
+            error_description: err.message
+          });
+        }
+      }
+      
+      // Retry authentication
+      window.retryAuthentication = function() {
+        // Redirect to Twitch auth URL
+        const clientId = 'oc3x0o8xlhmi208n62je3urt4yck5w';
+        const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+        const scopes = encodeURIComponent('user:read:email user:read:follows user:read:subscriptions channel:read:stream_key chat:read chat:edit whispers:read whispers:edit');
+        const state = Math.random().toString(36).substring(2, 34);
+        
+        const authUrl = `https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes}&state=${state}`;
+        
+        window.location.href = authUrl;
+      };
+      
+      // Close window
+      window.closeWindow = function() {
+        if (window.opener && !window.opener.closed) {
+          window.opener.focus();
+        }
+        window.close();
+      };
+      
+      // Listen for messages from parent window
+      window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'ack') {
+          console.log('Acknowledgment received from parent');
+        }
+      });
+      
+      // Start handling the callback when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', handleCallback);
+      } else {
+        handleCallback();
+      }
+      
+      // Log page load for debugging
+      console.log('Callback page loaded at:', new Date().toISOString());
+      console.log('Full URL:', window.location.href);
+    })();
+  </script>
+</body>
+</html>
