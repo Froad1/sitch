@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 /// Glass-styled button with Apple Liquid Glass effect
@@ -22,7 +23,7 @@ class GlassButton extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -114,7 +115,7 @@ class GlassCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Material(
           color: Colors.transparent,
           child: InkWell(

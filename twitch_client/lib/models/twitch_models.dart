@@ -353,7 +353,7 @@ class ChatMessage {
         displayName: displayName,
         message: messagePart.length > 1 ? messagePart.substring(1) : '',
         timestamp: timestamp,
-        badges: tags['badges'] != null ? tags['badges'] : null,
+        badges: tags['badges'],
         color: color,
         isModerator: mod,
         isSubscriber: subscriber,
