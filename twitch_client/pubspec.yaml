@@ -55,9 +55,10 @@ flutter:
   assets:
     - assets/images/
   
-  fonts:
-    - family: SF Pro
-      fonts:
-        - asset: assets/fonts/SF-Pro-Regular.ttf
-        - asset: assets/fonts/SF-Pro-Bold.ttf
-          weight: 700
+  # Fonts temporarily disabled due to missing font files
+  # fonts:
+  #   - family: SF Pro
+  #     fonts:
+  #       - asset: assets/fonts/SF-Pro-Regular.ttf
+  #       - asset: assets/fonts/SF-Pro-Bold.ttf
+  #         weight: 700
