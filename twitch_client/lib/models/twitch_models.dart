@@ -346,6 +346,18 @@ class ChatMessage {
         int.tryParse(tags['tmi-sent-ts'] ?? '0') ?? 0,
       );
       
+      final badgesStr = tags['badges'];
+      Map<String, dynamic>? badgesMap;
+      if (badgesStr != null && badgesStr.isNotEmpty) {
+        badgesMap = <String, dynamic>{};
+        for (final badge in badgesStr.split(',')) {
+          final parts = badge.split('/');
+          if (parts.length == 2) {
+            badgesMap![parts[0]] = parts[1];
+          }
+        }
+      }
+      
       return ChatMessage(
         id: messageId,
         userId: userId,
@@ -353,7 +365,7 @@ class ChatMessage {
         displayName: displayName,
         message: messagePart.length > 1 ? messagePart.substring(1) : '',
         timestamp: timestamp,
-        badges: tags['badges'],
+        badges: badgesMap,
         color: color,
         isModerator: mod,
         isSubscriber: subscriber,

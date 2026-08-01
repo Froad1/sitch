@@ -1,12 +1,12 @@
 ```
-# Dart/Flutter build artifacts
+# Dart/Flutter specific ignores
 .dart_tool/
-.build/
-bin/
-
-# Dependencies
-.pub/
+.packages
+.pub-cache/
 pubspec.lock
+
+# Build outputs
+build/
 
 # IDE files
 .idea/
@@ -14,15 +14,14 @@ pubspec.lock
 *.swp
 *.swo
 
-# Logs
+# Log files
 *.log
 
-# Environment
+# Temporary files
+*.tmp
+
+# Environment files
 .env
 .env.local
 *.env.*
-
-# OS generated files
-.DS_Store
-Thumbs.db
 ```
