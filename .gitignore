@@ -1,26 +1,32 @@
 ```
-# Dependencies
-.pub/
+# Dart/Flutter specific ignores
 .dart_tool/
-
-# Build artifacts
+.packages
+.pub-cache/
+pubspec.lock
 build/
-dist/
+coverage/
 
-# Logs and temp files
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
 *.log
-*.tmp
 
-# Environment
+# Environment variables
 .env
 .env.local
 *.env.*
 
-# Editors
-.vscode/
-.idea/
-*.swp
-
-# Coverage
-coverage/
+# Temporary files
+*.tmp
+*.temp
 ```
