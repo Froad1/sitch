@@ -1,28 +1,26 @@
 ```
-# Dart/Flutter specific
+# Dependencies
+.pub/
 .dart_tool/
-.packages
-pubspec.lock
 
-# Build outputs
+# Build artifacts
 build/
+dist/
 
-# IDE files
-.idea/
-.vscode/
-*.iml
-*.ipr
-*.iws
-
-# Logs
+# Logs and temp files
 *.log
+*.tmp
 
-# Environment variables
+# Environment
 .env
 .env.local
 *.env.*
 
-# OS generated files
-.DS_Store
-Thumbs.db
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Coverage
+coverage/
 ```

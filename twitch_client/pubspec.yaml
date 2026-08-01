@@ -31,6 +31,9 @@ dependencies:
   # Storage
   shared_preferences: ^2.2.2
   
+  # Web support
+  web: ^1.0.0
+
   # UI & Design
   glassmorphism: ^3.0.0
   backdrop: ^0.9.0
