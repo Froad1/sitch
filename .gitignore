@@ -1,0 +1,25 @@
+```
+# Dependencies
+.pub/
+.dart_tool/
+build/
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+```

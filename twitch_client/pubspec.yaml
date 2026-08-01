@@ -1,0 +1,60 @@
+name: twitch_client
+description: A Twitch client application with web and iOS support, featuring Apple Liquid Glass design and native PiP.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # HTTP & API
+  http: ^1.1.0
+  dio: ^5.4.0
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # OAuth & Auth
+  flutter_web_auth_2: ^3.1.0
+  url_launcher: ^6.2.1
+  
+  # Video Player
+  chewie: ^1.7.4
+  video_player: ^2.8.1
+  
+  # WebSocket for Chat
+  web_socket_channel: ^2.4.0
+  
+  # Storage
+  shared_preferences: ^2.2.2
+  
+  # UI & Design
+  glassmorphism: ^3.0.0
+  backdrop: ^0.9.0
+  
+  # Utilities
+  json_annotation: ^4.8.1
+  intl: ^0.18.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+  
+  fonts:
+    - family: SF Pro
+      fonts:
+        - asset: assets/fonts/SF-Pro-Regular.ttf
+        - asset: assets/fonts/SF-Pro-Bold.ttf
+          weight: 700
