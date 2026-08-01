@@ -1,8 +1,11 @@
+import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
 import '../models/twitch_models.dart';
+import '../services/auth_service.dart';
 import '../services/chat_service.dart';
 import '../widgets/glass_button.dart';
 

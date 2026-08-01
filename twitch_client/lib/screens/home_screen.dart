@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
@@ -49,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
             top: Radius.circular(20),
           ),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
               height: 80,
               decoration: BoxDecoration(

@@ -17,7 +17,7 @@ class TwitchClientApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
-        ChangeNotifierProvider(create: (_) => TwitchApiService()),
+        ChangeNotifierProvider(create: (_) => TwitchApiService(Provider.of<AuthService>(_, listen: false))),
       ],
       child: MaterialApp(
         title: 'Twitch Client',
