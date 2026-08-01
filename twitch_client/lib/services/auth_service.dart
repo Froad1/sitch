@@ -47,10 +47,9 @@ class AuthService extends ChangeNotifier {
     if (!kIsWeb) return;
 
     // Listen for messages from the callback window
-    web.window.addEventListener('message', (web.Event event) {
-      final messageEvent = event as web.MessageEvent;
-      _handleWebMessage(messageEvent);
-    });
+    web.window.addEventListener('message', ((web.MessageEvent event) {
+      _handleWebMessage(event);
+    }).toJS);
 
     // Check for stored auth code on page load (direct navigation flow)
     _checkStoredAuthCode();
